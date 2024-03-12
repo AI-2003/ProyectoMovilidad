@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import requests
+from tqdm import tqdm
 
 # Avoid repetition of coordinates
 def group_points(df, precision=4):
@@ -68,31 +69,35 @@ def group_within_intervals(df, precision, time_interval_s):
 def snap_to_roads(df, osrm_server_url='http://router.project-osrm.org'):
     # Create a copy of the DataFrame to avoid modifying the original
     snapped_df = df.copy()
-    total = len(snapped_df)
+    plate = df['busPlate: Descending'][0]
+    
     # Prepare an empty list for street names
     street_names = []
-    progress=0
-    for index, row in snapped_df.iterrows():
+    
+    # Wrap the iteration with tqdm for a progress bar
+    for index, row in tqdm(snapped_df.iterrows(), total=len(snapped_df), desc=f"Plate {plate}: Snapping to roads"):
         # Construct the OSRM API request URL
         request_url = f"{osrm_server_url}/nearest/v1/driving/{row['Longitude']},{row['Latitude']}?number=1"
+        
         # Make the request to the OSRM server
         response = requests.get(request_url)
         data = response.json()
+        
         # Check if the request was successful and a nearest road was found
         if response.status_code == 200 and data['waypoints']:
             nearest_waypoint = data['waypoints'][0]
             # Update the coordinates with the snapped location
             snapped_df.at[index, 'Latitude'] = nearest_waypoint['location'][1]
             snapped_df.at[index, 'Longitude'] = nearest_waypoint['location'][0]
+            
             # Attempt to retrieve the street name if available
             street_name = nearest_waypoint.get('name', 'Unknown')
             street_names.append(street_name)
         else:
             # If no road found, keep the original coordinates and use a placeholder for the street name
             street_names.append('Unknown')
-        print(progress,'/', total)
-        progress+=1
-    print('100%')
+    
     # Add the 'StreetName' column to the DataFrame
     snapped_df['StreetName'] = street_names
+    
     return snapped_df

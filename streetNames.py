@@ -3,6 +3,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from Functions.prepping import *
 from Functions.maps import *
 from Functions.points import *
+from tqdm import tqdm
 
 # Load the CSV file and prepare
 df = pd.read_csv('BD.csv')
@@ -21,8 +22,9 @@ def process_plate(plate):
 # Use ThreadPoolExecutor to process each plate in parallel
 all_streets = []
 with ThreadPoolExecutor(max_workers=4) as executor:
-    futures = [executor.submit(process_plate, plate) for plate in plates]
-    for future in as_completed(futures):
+    # Prepare futures and wrap them with tqdm for progress indication
+    futures = {executor.submit(process_plate, plate): plate for plate in plates}
+    for future in tqdm(as_completed(futures), total=len(plates), desc="Processing plates"):
         all_streets.append(future.result())
 
 # Concatenate and group
