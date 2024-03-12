@@ -90,7 +90,7 @@ def snap_to_roads(df, osrm_server_url='http://router.project-osrm.org'):
         else:
             # If no road found, keep the original coordinates and use a placeholder for the street name
             street_names.append('Unknown')
-        print(round((progress/total)*100,2),'%')
+        print(progress,'/', total)
         progress+=1
     print('100%')
     # Add the 'StreetName' column to the DataFrame

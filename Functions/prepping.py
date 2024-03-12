@@ -23,3 +23,19 @@ def filter_and_format_df(df, route, plate, receivedStartTime, receivedEndTime, i
     filtered_df['Longitude'] = coords['Longitude']
     filtered_df['Scale'] = initialScale
     return filtered_df
+
+
+# Funtcion to parse dateTimes and coordinates and give each point a scale
+def format(df, initialScale=2):
+    formatted_df = df.copy()
+    # Convert 'receivedtime: Descending' to datetime
+    formatted_df['receivedtime: Descending'] = pd.to_datetime(formatted_df['receivedtime: Descending'])
+    # Reset the index of filtered_df to ensure sequential indexing after filtering
+    formatted_df.reset_index(drop=True, inplace=True)
+    # Parse and round coordinates based on the provided precision
+    coords = formatted_df['Coordenadas: Descending'].apply(lambda x: pd.Series(parse_coordinates(x), index=['Latitude', 'Longitude']))
+    formatted_df['Latitude'] = coords['Latitude']
+    formatted_df['Longitude'] = coords['Longitude']
+    # Set scale
+    formatted_df['Scale'] = initialScale
+    return formatted_df

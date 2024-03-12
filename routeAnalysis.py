@@ -29,6 +29,7 @@ map_points(grouped_df, 'Maps/grouped_points_map.html')
 # Grouped within intervals
 grouped_within_interval_df = group_within_intervals(filtered_df, rounding_precision, time_diff_threshold)
 map_points(grouped_within_interval_df, 'Maps/grouped_within_interval_points_map.html')
+
 grouped_within_interval_df['Scale'] = 2
 map_route(grouped_within_interval_df, 'Maps/route_map.html')
 map_route(grouped_within_interval_df, 'Maps/grouped_points_route.html')
