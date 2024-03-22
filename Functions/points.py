@@ -2,6 +2,9 @@ import numpy as np
 import pandas as pd
 import requests
 from tqdm import tqdm
+import geopandas as gpd
+import osmnx as ox
+from shapely.geometry import Point
 
 # Avoid repetition of coordinates
 def group_points(df, precision=4):
@@ -101,3 +104,67 @@ def snap_to_roads(df, osrm_server_url='http://router.project-osrm.org'):
     snapped_df['StreetName'] = street_names
     
     return snapped_df
+
+# Gets the df that contains the official info of the route 'ruta'
+def official_route(ruta):
+    # pd.set_option('display.expand_frame_repr', False)
+    # ox.config(use_cache=True, log_console=True)
+
+    # Read the shapefile
+    routes_shp = gpd.read_file("/Users/carlo/OneDrive/Documentos/Escuela/ProyectoMovilidad/Code/Data/concesionado_ruta_shp/Concesionado_Ruta.shp")
+    routes_shp['RUTA'] = routes_shp['RUTA'].astype(str)
+
+    data_per_route = routes_shp[routes_shp.RUTA == ruta]
+    return data_per_route
+    
+# Gets the open street maps nodes and edges in a certain square
+def map_in_bounds(west, south, east, north):
+    G = ox.graph_from_bbox(north, south, east, west, network_type='drive',simplify=False) #simplify=False
+    G = ox.get_undirected(G)
+    set_nodes = ox.graph_to_gdfs(G, nodes=True, edges=False)
+    set_edges = ox.graph_to_gdfs(G, nodes=False, edges=True)
+
+    return set_nodes, set_edges
+
+# Given a df wiht Latitude and Longitude columns, it gives back the predicted variant of the route that it represents
+def clasify_route_variant(df):
+    if len(df['routeID: Descending'].unique()) > 1:
+        print("Invalid dataframe, it contains information on more than one route")
+        return None
+    else:
+        route_df = official_route(df.iloc[0]['routeID: Descending'].replace('RUTA ', ''))
+        # Convert filtered_df to a GeoDataFrame with Point geometries
+        gdf_points = gpd.GeoDataFrame(df, geometry=[Point(xy) for xy in zip(df.Longitude, df.Latitude)], crs="EPSG:4326")
+
+        # Ensure route_df is correctly set as a GeoDataFrame and has the correct CRS
+        if not route_df.crs:
+            route_df = route_df.set_crs("EPSG:4326")
+
+        # Initialize a dictionary to store the sum of distances for each route variant
+        total_distances = {}
+
+        # Calculate distance from each route variant to all points and sum these distances
+        for route_index, route_row in route_df.iterrows():
+            total_distance = 0
+            
+            # Sum distances from this route variant to each point
+            for _, point_row in gdf_points.iterrows():
+                distance = point_row.geometry.distance(route_row.geometry)
+                total_distance += distance
+            
+            # Store the total distance for this route variant
+            total_distances[route_index] = total_distance
+
+        # Determine the route variant with the minimum total distance to all points
+        closest_route_index = min(total_distances, key=total_distances.get)
+
+        return route_df.loc[closest_route_index]
+    
+def deviation_from_route(empiric_df, route_df):
+    gdf_points = gpd.GeoDataFrame(empiric_df, geometry=[Point(xy) for xy in zip(empiric_df.Longitude, empiric_df.Latitude)], crs="EPSG:4326")
+    total_distance = 0
+    for _, row in gdf_points.iterrows():
+        distance = route_df.geometry.distance(row.geometry)
+        total_distance += distance
+    return total_distance
+

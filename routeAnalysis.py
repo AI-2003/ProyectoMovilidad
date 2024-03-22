@@ -3,7 +3,7 @@ from Functions.maps import *
 from Functions.points import *
 
 # Load the CSV file
-file_name = 'BD.csv'
+file_name = 'Data/BD.csv'
 df = pd.read_csv(file_name)
 
 # ================
