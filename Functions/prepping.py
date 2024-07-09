@@ -1,41 +1,35 @@
 import pandas as pd
 
-# Function to parse coordinates
-def parse_coordinates(coord_str):
-    x, y = coord_str.split(", ")
-    return float(x), float(y)
+# Standarize naming
+def renameColumns(df):
+    df.rename(columns={'timestamp': 'Time', 'placa': 'Plate', 'ruta': 'Route', 'latitud': 'Latitude', 'longitud': 'Longitude'}, inplace=True)
+    return df
 
-# Filter and format the df
+# Correct datatypes and filter to needs
 def filter_and_format_df(df, route, plate, receivedStartTime, receivedEndTime, initialScale):
     filtered_df = df.copy()
-    # Convert 'receivedtime: Descending' to datetime
-    filtered_df['receivedtime: Descending'] = pd.to_datetime(filtered_df['receivedtime: Descending'])
+    filtered_df = renameColumns(filtered_df)
+    # Convert 'Time' to datetime
+    filtered_df['Time'] = pd.to_datetime(filtered_df['Time'])
     # Filter DataFrame to match conditions
-    filtered_df = filtered_df[(filtered_df['routeID: Descending'] == route) &
-                        (filtered_df['busPlate: Descending'] == plate) &
-                        (filtered_df['receivedtime: Descending'] >= pd.to_datetime(receivedStartTime)) &
-                        (filtered_df['receivedtime: Descending'] <= pd.to_datetime(receivedEndTime))]
+    filtered_df = filtered_df[(filtered_df['Route'] == route) &
+                              (filtered_df['Plate'] == plate) &
+                              (filtered_df['Time'] >= pd.to_datetime(receivedStartTime)) &
+                              (filtered_df['Time'] <= pd.to_datetime(receivedEndTime))]
     # Reset the index of filtered_df to ensure sequential indexing after filtering
     filtered_df.reset_index(drop=True, inplace=True)
-    # Parse and round coordinates based on the provided precision
-    coords = filtered_df['Coordenadas: Descending'].apply(lambda x: pd.Series(parse_coordinates(x), index=['Latitude', 'Longitude']))
-    filtered_df['Latitude'] = coords['Latitude']
-    filtered_df['Longitude'] = coords['Longitude']
+    # Set scale
     filtered_df['Scale'] = initialScale
     return filtered_df
 
-
-# Funtcion to parse dateTimes and coordinates and give each point a scale
-def format(df, initialScale=2):
+# Function to format the DataFrame, adapting to the new structure
+def format_df(df, initialScale=2):
     formatted_df = df.copy()
-    # Convert 'receivedtime: Descending' to datetime
-    formatted_df['receivedtime: Descending'] = pd.to_datetime(formatted_df['receivedtime: Descending'])
-    # Reset the index of filtered_df to ensure sequential indexing after filtering
+    formatted_df = renameColumns(formatted_df)
+    # Convert 'Time' to datetime
+    formatted_df['Time'] = pd.to_datetime(formatted_df['Time'])
+    # Reset the index of formatted_df to ensure sequential indexing after filtering
     formatted_df.reset_index(drop=True, inplace=True)
-    # Parse and round coordinates based on the provided precision
-    coords = formatted_df['Coordenadas: Descending'].apply(lambda x: pd.Series(parse_coordinates(x), index=['Latitude', 'Longitude']))
-    formatted_df['Latitude'] = coords['Latitude']
-    formatted_df['Longitude'] = coords['Longitude']
     # Set scale
     formatted_df['Scale'] = initialScale
     return formatted_df
