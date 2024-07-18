@@ -4,3 +4,4 @@ Data
 Functions/__pycache__
 cache
 __pycache__
+*.ipynb
