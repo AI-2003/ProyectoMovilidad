@@ -2,7 +2,7 @@ import pandas as pd
 import geopandas as gpd
 from tqdm import tqdm
 from Functions.prepping import *
-from Functions.points import clean_gps_data, classify_route_variant
+from Functions.points import clean_gps_data, classify_route_variant, deviation_from_route
 
 # ================================================================
 # Overview
@@ -57,10 +57,13 @@ for plate in tqdm(empiric_df['Plate'].unique(), desc="Processing plates"):
         clean_df = clean_gps_data(plate_date_df, rounding_precision, time_diff_threshold, closer_threshold)
         
         # Predict the branch of the route and calculate the deviation
-        predicted_df, deviation = classify_route_variant(clean_df, branches_df)
+        predicted_df = classify_route_variant(clean_df, branches_df)
+
+        # Calculate the deviation of predicted route to uncleaned data
+        deviation = deviation_from_route(predicted_df, plate_date_df)
         
         # Calculate the mean deviation
-        mean_deviation = deviation / clean_df.shape[0]  # deviation divided by the number of points
+        mean_deviation = deviation / plate_date_df.shape[0]  # deviation divided by the number of points
         
         # Append the record to the list
         records.append({"Plate": plate, "Date": day, "Deviation": mean_deviation, "Predicted_Branch": predicted_df["Branch"]})

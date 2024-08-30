@@ -167,9 +167,9 @@ def classify_route_variant(df, route_df):
             total_distances[route_index] = total_distance
         # Determine the route variant with the minimum total distance to all points
         closest_route_index = min(total_distances, key=total_distances.get)
-        return route_df.loc[closest_route_index], total_distances[closest_route_index]  # Route variant and the deviation measure
+        return route_df.loc[closest_route_index]  # Route variant and the deviation measure
 
-def deviation_from_route(empiric_df, route_df):
+def deviation_from_route(route_df, empiric_df):
     """
     Calculate the total deviation distance from the route.
     
